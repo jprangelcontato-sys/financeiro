@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#185FA5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Gerente $">
+<title>Meu Gerente Financeiro</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;color:#1a1a1a;background:#f5f5f0;min-height:100vh;min-height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.app{max-width:680px;margin:0 auto;padding:1rem}
+.header{margin-bottom:1.25rem;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.header-left h1{font-size:20px;font-weight:500}
+.header-left .sub{font-size:12px;color:#888;margin-top:2px}
+.sync-status{display:flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:99px;border:1px solid #e0e0e0;background:#fff;color:#666;white-space:nowrap;margin-top:4px}
+.sync-status.ok{border-color:#1D9E75;color:#1D9E75;background:#EAF3DE}
+.sync-status.err{border-color:#E24B4A;color:#E24B4A;background:#FCEBEB}
+.sync-status.loading{border-color:#BA7517;color:#854F0B;background:#FAEEDA}
+
+/* Setup Supabase banner */
+.setup-banner{background:#E6F1FB;border:1px solid #378ADD;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.setup-banner h3{font-size:15px;font-weight:500;color:#185FA5;margin-bottom:8px}
+.setup-banner p{font-size:13px;color:#185FA5;margin-bottom:10px;line-height:1.5}
+.setup-fields{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.setup-fields input{height:36px;padding:0 12px;border:1px solid #378ADD;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a1a;background:#fff}
+.setup-fields input:focus{outline:none;border-color:#185FA5}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid #e0e0e0;margin-bottom:1.5rem;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 14px;font-size:13px;cursor:pointer;border:none;background:none;color:#666;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit;white-space:nowrap}
+.tab.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:500}
+.tab:hover:not(.active){color:#1a1a1a}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:#666;margin-bottom:4px}
+.big-num{font-size:28px;font-weight:500;color:#1a1a1a}
+.input-row{display:flex;gap:8px;margin-top:8px}
+.input-row input{flex:1;height:36px;padding:0 12px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;font-family:inherit}
+.input-row input:focus{outline:none;border-color:#185FA5}
+.btn{padding:8px 16px;border:1px solid #ccc;border-radius:8px;background:none;cursor:pointer;font-size:14px;font-family:inherit;color:#1a1a1a;display:inline-flex;align-items:center;gap:6px;transition:background .15s}
+.btn:hover{background:#f5f5f5}
+.btn:active{transform:scale(0.98)}
+.btn.primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn.primary:hover{background:#0C447C}
+.btn.danger{border-color:#E24B4A;color:#E24B4A}
+.btn.danger:hover{background:#FCEBEB}
+.btn.success{border-color:#1D9E75;color:#1D9E75}
+.btn.success:hover{background:#EAF3DE}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.alert{padding:12px 16px;border-radius:8px;font-size:14px;margin-bottom:1rem;display:flex;align-items:flex-start;gap:10px}
+.alert.warning{background:#FAEEDA;border:1px solid #BA7517;color:#854F0B}
+.alert.danger{background:#FCEBEB;border:1px solid #E24B4A;color:#A32D2D}
+.alert.success{background:#EAF3DE;border:1px solid #1D9E75;color:#3B6D11}
+.alert.info{background:#E6F1FB;border:1px solid #378ADD;color:#185FA5}
+.instrucao{background:#f9f9f9;border:1px solid #e0e0e0;border-radius:12px;padding:1.25rem;margin-bottom:12px}
+.instrucao-texto{font-size:15px;font-weight:500;margin-bottom:6px}
+.instrucao-motivo{font-size:13px;color:#666;margin-bottom:8px}
+.instrucao-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ver-mais{font-size:13px;color:#185FA5;cursor:pointer;border:none;background:none;padding:0;font-family:inherit;margin-top:4px;display:inline-flex;align-items:center;gap:4px}
+.ver-mais:hover{text-decoration:underline}
+.detalhes{font-size:13px;color:#666;margin-top:10px;padding:10px 12px;background:#fff;border-radius:8px;display:none;line-height:1.6;border:1px solid #e0e0e0}
+.detalhes.open{display:block}
+.pizza-wrap{display:flex;align-items:center;gap:2rem;flex-wrap:wrap;margin:1rem 0}
+.legenda{flex:1;min-width:160px}
+.legenda-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:14px}
+.dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.inv-item{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 0;border-bottom:1px solid #e0e0e0;gap:8px}
+.inv-item:last-child{border-bottom:none}
+.inv-nome{font-size:14px;font-weight:500}
+.inv-banco{font-size:12px;color:#666}
+.inv-valor{font-size:14px;font-weight:500;text-align:right}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:12px}
+.badge.livre{background:#EAF3DE;color:#3B6D11}
+.badge.trancado{background:#FAEEDA;color:#854F0B}
+.mes-card{background:#f9f9f9;border-radius:8px;padding:1rem;text-align:center}
+.mes-num{font-size:22px;font-weight:500}
+.previsao{font-size:13px;color:#666;margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:1.5rem;max-width:400px;width:100%;border:1px solid #e0e0e0;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:500;margin-bottom:12px}
+.modal-btns{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.section-title{font-size:13px;font-weight:500;color:#666;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px}
+.chat-area{border:1px solid #e0e0e0;border-radius:12px;overflow:hidden}
+.chat-msgs{min-height:120px;max-height:260px;overflow-y:auto;padding:1rem;background:#f9f9f9}
+.chat-msg{font-size:14px;line-height:1.6;margin-bottom:8px;padding:8px 12px;border-radius:8px}
+.chat-msg.user{background:#E6F1FB;color:#185FA5;margin-left:2rem}
+.chat-msg.bot{background:#fff;border:1px solid #e0e0e0;margin-right:2rem}
+.chat-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid #e0e0e0;background:#fff}
+.chat-input-row input{flex:1;height:36px;padding:0 12px;border:1px solid #e0e0e0;border-radius:8px;background:#f9f9f9;color:#1a1a1a;font-size:14px;font-family:inherit}
+.chat-input-row input:focus{outline:none;border-color:#185FA5}
+.no-inv{font-size:14px;color:#999;text-align:center;padding:2rem}
+.impacto-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #e0e0e0;font-size:14px}
+.impacto-row:last-child{border-bottom:none}
+select{width:100%;height:36px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;padding:0 8px;font-size:14px;font-family:inherit}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.field input{height:36px;padding:0 12px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;font-family:inherit}
+.field input:focus,.field select:focus{outline:none;border-color:#185FA5}
+.typing{display:inline-flex;gap:4px;align-items:center;padding:8px 12px}
+.typing span{width:8px;height:8px;border-radius:50%;background:#ccc;animation:bounce 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+@media(max-width:480px){.grid2{grid-template-columns:1fr}}
+
+/* PWA install banner */
+.install-banner{background:#185FA5;color:#fff;border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px}
+.install-banner .ti{font-size:24px;flex-shrink:0}
+.install-banner-text{flex:1;font-size:13px;line-height:1.5}
+.install-banner-text strong{display:block;font-size:14px;margin-bottom:2px}
+.install-banner .btn-install{background:#fff;color:#185FA5;border:none;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <h1>Meu gerente financeiro</h1>
+      <div class="sub">Meta: mínimo 12% ao ano, mirando 1,5% a 2% ao mês</div>
+    </div>
+    <div id="sync-badge" class="sync-status loading" title="Status da sincronização">
+      <i class="ti ti-cloud"></i> <span>Conectando…</span>
+    </div>
+  </div>
+
+  <!-- Banner instalar PWA (só aparece quando disponível) -->
+  <div id="install-banner" class="install-banner" style="display:none">
+    <i class="ti ti-device-mobile"></i>
+    <div class="install-banner-text">
+      <strong>Instalar como app</strong>
+      Acesse pelo celular ou PC sem abrir o navegador
+    </div>
+    <button class="btn-install" onclick="instalarApp()">Instalar</button>
+  </div>
+
+  <!-- Banner de configuração do Supabase -->
+  <div id="setup-banner" class="setup-banner" style="display:none">
+    <h3><i class="ti ti-database"></i> Configure o banco de dados</h3>
+    <p>Para salvar seus dados na nuvem (funciona em qualquer aparelho), cole as informações do seu projeto Supabase:</p>
+    <div class="setup-fields">
+      <input type="url" id="sb-url" placeholder="URL do projeto (https://xxxx.supabase.co)" autocomplete="off">
+      <input type="text" id="sb-key" placeholder="Chave anon/public" autocomplete="off">
+    </div>
+    <button class="btn primary" onclick="salvarConfig()"><i class="ti ti-check"></i> Conectar banco de dados</button>
+    <div style="margin-top:10px;font-size:12px;color:#185FA5">
+      Não tem conta? → <a href="https://supabase.com" target="_blank" style="color:#185FA5">supabase.com</a> (grátis) · Crie um projeto → clique em "Project Settings" → "API" → copie os campos acima.
+    </div>
+  </div>
+
+  <div id="alert-perdeu" class="alert warning" style="display:none">
+    <i class="ti ti-alert-triangle"></i>
+    <span id="alert-perdeu-txt"></span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('carteira',this)"><i class="ti ti-wallet"></i> Carteira</button>
+    <button class="tab" onclick="showTab('onde',this)"><i class="ti ti-chart-pie"></i> Onde está</button>
+    <button class="tab" onclick="showTab('instrucoes',this)"><i class="ti ti-list-check"></i> Instruções</button>
+    <button class="tab" onclick="showTab('retirar',this)"><i class="ti ti-cash"></i> Retirar</button>
+    <button class="tab" onclick="showTab('chat',this)"><i class="ti ti-message"></i> Perguntar</button>
+  </div>
+
+  <!-- CARTEIRA -->
+  <div id="tab-carteira" class="panel active">
+    <div class="card">
+      <div class="label">Saldo total investido</div>
+      <div class="big-num" id="saldo-total">R$ 0,00</div>
+      <div style="font-size:13px;color:#666;margin-top:4px" id="saldo-livre-label">Livre para usar: R$ 0,00</div>
+    </div>
+    <div class="grid2">
+      <div class="mes-card">
+        <div class="label">Rendimento este mês</div>
+        <div class="mes-num" id="rend-mes">R$ 0,00</div>
+        <div class="previsao" id="rend-pct">0,00% ao mês</div>
+      </div>
+      <div class="mes-card">
+        <div class="label">Previsão em 1 ano</div>
+        <div class="mes-num" id="prev-ano">R$ 0,00</div>
+        <div class="previsao" id="prev-renda">Retirada mensal: R$ 0,00</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Adicionar dinheiro</div>
+      <div class="input-row">
+        <input type="number" id="inp-add" placeholder="Valor em reais" min="0" inputmode="decimal">
+        <button class="btn primary" onclick="openModalAdd()"><i class="ti ti-plus"></i> Adicionar</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Dinheiro extra disponível hoje</div>
+      <div style="font-size:13px;color:#666;margin-bottom:8px">Tem dinheiro sobrando? Informe e receba uma indicação na hora.</div>
+      <div class="input-row">
+        <input type="number" id="inp-extra" placeholder="Quanto tem disponível" min="0" inputmode="decimal">
+        <button class="btn primary" onclick="indicarExtra()"><i class="ti ti-bulb"></i> Indicar</button>
+      </div>
+      <div id="extra-resp" style="margin-top:10px;font-size:14px;display:none" class="alert info"></div>
+    </div>
+  </div>
+
+  <!-- ONDE ESTÁ -->
+  <div id="tab-onde" class="panel">
+    <div class="card">
+      <div class="section-title">Distribuição do dinheiro</div>
+      <div class="pizza-wrap">
+        <canvas id="pizza" width="140" height="140"></canvas>
+        <div class="legenda" id="legenda"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="section-title" style="margin:0">Meus investimentos</div>
+        <button class="btn primary" onclick="openModalNovoInv()" style="font-size:13px;padding:6px 12px"><i class="ti ti-plus"></i> Adicionar</button>
+      </div>
+      <div id="lista-inv"><div class="no-inv">Nenhum investimento cadastrado ainda.</div></div>
+    </div>
+  </div>
+
+  <!-- INSTRUÇÕES -->
+  <div id="tab-instrucoes" class="panel">
+    <div class="alert info" style="margin-bottom:1rem">
+      <i class="ti ti-clock"></i>
+      <span>Clique em atualizar toda manhã para receber suas instruções do dia.</span>
+    </div>
+    <button class="btn primary" onclick="atualizarInstrucoes()" style="margin-bottom:1rem;width:100%;justify-content:center"><i class="ti ti-refresh"></i> Atualizar instruções de hoje</button>
+    <div id="instrucoes-lista"></div>
+    <div class="card" style="margin-top:1.5rem">
+      <div class="section-title">Resumo do mês</div>
+      <div id="resumo-mes" style="font-size:14px;color:#666">Atualize as instruções para ver o resumo.</div>
+    </div>
+  </div>
+
+  <!-- RETIRAR -->
+  <div id="tab-retirar" class="panel">
+    <div class="card">
+      <div class="section-title">Quanto posso retirar</div>
+      <div style="font-size:14px;color:#666;margin-bottom:12px">Sempre mantenho pelo menos 20% do seu dinheiro livre para emergências.</div>
+      <div style="font-size:28px;font-weight:500;color:#1D9E75" id="max-retirar">R$ 0,00</div>
+      <div style="font-size:13px;color:#666;margin-top:4px">sem prejudicar seus rendimentos</div>
+    </div>
+    <div class="card">
+      <div class="section-title">Simular retirada</div>
+      <div class="input-row">
+        <input type="number" id="inp-retirar" placeholder="Quanto quer retirar" min="0" oninput="simularRetirada()" inputmode="decimal">
+      </div>
+      <div id="impacto-retirada" style="margin-top:12px;display:none">
+        <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:8px">Impacto desta retirada:</div>
+        <div class="impacto-row"><span>Você recebe agora</span><span id="imp-agora" style="font-weight:500"></span></div>
+        <div class="impacto-row"><span>Em 1 ano teria virado</span><span id="imp-1ano" style="color:#E24B4A"></span></div>
+        <div class="impacto-row"><span>Em 5 anos teria virado</span><span id="imp-5anos" style="color:#E24B4A"></span></div>
+        <div style="margin-top:12px;font-size:13px;color:#666" id="imp-de-onde"></div>
+        <button class="btn danger" style="margin-top:12px;width:100%;justify-content:center" onclick="confirmarRetirada()">Confirmar retirada</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="tab-chat" class="panel">
+    <div style="font-size:14px;color:#666;margin-bottom:1rem">Faça perguntas sobre seus investimentos. Já sei tudo que está cadastrado aqui.</div>
+    <div class="chat-area">
+      <div class="chat-msgs" id="chat-msgs">
+        <div class="chat-msg bot">Olá! Pode me perguntar qualquer coisa sobre seus investimentos. Por exemplo: "Tenho R$ 500 sobrando, o que faço?" ou "Vale tirar dinheiro do Tesouro agora?"</div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-inp" placeholder="Digite sua pergunta..." onkeydown="if(event.key==='Enter')enviarChat()">
+        <button class="btn primary" onclick="enviarChat()"><i class="ti ti-send"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAIS -->
+<div class="modal-bg" id="modal-add">
+  <div class="modal">
+    <h3>Adicionar dinheiro</h3>
+    <div style="font-size:14px;color:#666;margin-bottom:12px">Onde você vai colocar este dinheiro?</div>
+    <select id="sel-add-inv"></select>
+    <div style="margin-top:8px;font-size:13px;color:#666">Ou adicione ao saldo livre para alocar depois.</div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal('modal-add')">Cancelar</button>
+      <button class="btn primary" onclick="confirmarAdd()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-inv">
+  <div class="modal">
+    <h3>Novo investimento</h3>
+    <div class="field"><label class="label">Nome</label><input type="text" id="inv-nome" placeholder="Ex: Caixinha Turbo"></div>
+    <div class="field"><label class="label">Banco</label><input type="text" id="inv-banco" placeholder="Ex: Nubank"></div>
+    <div class="field"><label class="label">Valor investido (R$)</label><input type="number" id="inv-valor" placeholder="0,00" min="0" inputmode="decimal"></div>
+    <div class="field"><label class="label">Taxa mensal (%)</label><input type="number" id="inv-taxa" placeholder="Ex: 1.31" step="0.01" min="0" inputmode="decimal"></div>
+    <div class="field"><label class="label">Prazo de bloqueio</label>
+      <select id="inv-prazo">
+        <option value="0">Livre (liquidez diária)</option>
+        <option value="30">30 dias</option>
+        <option value="60">60 dias</option>
+        <option value="90">90 dias</option>
+        <option value="180">180 dias</option>
+        <option value="365">1 ano</option>
+        <option value="730">2 anos</option>
+        <option value="9999">Longo prazo (Tesouro Renda+)</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal('modal-inv')">Cancelar</button>
+      <button class="btn primary" onclick="salvarInv()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-corrigir">
+  <div class="modal">
+    <h3>Corrigir saldo</h3>
+    <div style="font-size:14px;color:#666;margin-bottom:12px">Informe o saldo real que está no app do banco.</div>
+    <input type="number" id="corrigir-val" placeholder="Saldo real (R$)" inputmode="decimal" style="width:100%;height:36px;padding:0 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit">
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal('modal-corrigir')">Cancelar</button>
+      <button class="btn primary" onclick="confirmarCorrigir()">Corrigir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── SUPABASE CONFIG ───────────────────────────────────────────────────────────
+let sbClient = null;
+const CONFIG_KEY = 'gf_supabase_config';
+
+function carregarConfig() {
+  try { return JSON.parse(localStorage.getItem(CONFIG_KEY)) || null; } catch { return null; }
+}
+function salvarConfig() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  if (!url || !key) { alert('Preencha a URL e a chave do Supabase.'); return; }
+  localStorage.setItem(CONFIG_KEY, JSON.stringify({ url, key }));
+  iniciarSupabase(url, key);
+}
+
+async function iniciarSupabase(url, key) {
+  setSyncStatus('loading', 'Conectando…');
+  try {
+    sbClient = supabase.createClient(url, key);
+    // Garantir que a tabela existe criando se necessário
+    await garantirTabela();
+    document.getElementById('setup-banner').style.display = 'none';
+    setSyncStatus('ok', 'Sincronizado');
+    await carregarState();
+  } catch (e) {
+    setSyncStatus('err', 'Erro ao conectar');
+    document.getElementById('setup-banner').style.display = 'block';
+    console.error('Supabase init error', e);
+  }
+}
+
+async function garantirTabela() {
+  // Tenta fazer um select; se falhar provavelmente a tabela não existe
+  const { error } = await sbClient.from('gf_state').select('id').limit(1);
+  if (error && error.code === '42P01') {
+    // Tabela não existe — avisa o usuário
+    throw new Error('Tabela não encontrada. Crie a tabela "gf_state" no Supabase (instruções abaixo).');
+  }
+}
+
+function setSyncStatus(type, msg) {
+  const el = document.getElementById('sync-badge');
+  el.className = 'sync-status ' + type;
+  const icons = { ok: 'ti-cloud-check', err: 'ti-cloud-x', loading: 'ti-cloud' };
+  el.innerHTML = `<i class="ti ${icons[type]}"></i> <span>${msg}</span>`;
+}
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = { investimentos: [], saldoLivre: 0, instrucoes: null, dataInstrucao: null, instrucoesCumpridas: {}, corrigirIdx: -1 };
+
+async function carregarState() {
+  if (!sbClient) return carregarLocal();
+  setSyncStatus('loading', 'Carregando…');
+  try {
+    const { data, error } = await sbClient.from('gf_state').select('data').eq('id', 1).single();
+    if (error && error.code !== 'PGRST116') throw error;
+    if (data && data.data) {
+      const s = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+      state = { ...state, ...s };
+    }
+    setSyncStatus('ok', 'Sincronizado');
+  } catch (e) {
+    console.error('Erro ao carregar', e);
+    setSyncStatus('err', 'Offline');
+    carregarLocal();
+  }
+  render();
+}
+
+function carregarLocal() {
+  try {
+    const s = localStorage.getItem('gf_state');
+    if (s) state = { ...state, ...JSON.parse(s) };
+  } catch {}
+  render();
+}
+
+async function save() {
+  // Sempre salva localmente como backup
+  try { localStorage.setItem('gf_state', JSON.stringify(state)); } catch {}
+
+  if (!sbClient) { render(); return; }
+
+  setSyncStatus('loading', 'Salvando…');
+  try {
+    const payload = { id: 1, data: state, atualizado_em: new Date().toISOString() };
+    const { error } = await sbClient.from('gf_state').upsert(payload, { onConflict: 'id' });
+    if (error) throw error;
+    setSyncStatus('ok', 'Sincronizado');
+  } catch (e) {
+    console.error('Erro ao salvar', e);
+    setSyncStatus('err', 'Falha ao salvar');
+  }
+  render();
+}
+
+// ─── CÁLCULOS ─────────────────────────────────────────────────────────────────
+function fmt(v) { return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function calcSaldoAtual(inv) { if (!inv.dataEntrada) return inv.valor; const dias = Math.floor((Date.now() - new Date(inv.dataEntrada).getTime()) / 86400000); return inv.valor * Math.pow(1 + inv.taxa / 100, dias / 30); }
+function calcDiasRestantes(inv) { if (inv.prazo === 0) return 0; if (!inv.dataEntrada) return inv.prazo; const dias = Math.floor((Date.now() - new Date(inv.dataEntrada).getTime()) / 86400000); return Math.max(0, inv.prazo - dias); }
+function totalInvestido() { return state.investimentos.reduce((a, i) => a + calcSaldoAtual(i), 0) + state.saldoLivre; }
+function totalLivre() { return state.investimentos.filter(i => calcDiasRestantes(i) === 0).reduce((a, i) => a + calcSaldoAtual(i), 0) + state.saldoLivre; }
+function rendMes() { return state.investimentos.reduce((a, i) => a + calcSaldoAtual(i) * (i.taxa / 100), 0); }
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const total = totalInvestido(), livre = totalLivre(), rm = rendMes(), pctMes = total > 0 ? (rm / total * 100) : 0;
+  const prev1ano = total * Math.pow(1 + pctMes / 100, 12);
+  document.getElementById('saldo-total').textContent = fmt(total);
+  document.getElementById('saldo-livre-label').textContent = 'Livre para usar: ' + fmt(livre);
+  document.getElementById('rend-mes').textContent = fmt(rm);
+  document.getElementById('rend-pct').textContent = pctMes.toFixed(2) + '% ao mês';
+  document.getElementById('prev-ano').textContent = fmt(prev1ano);
+  document.getElementById('prev-renda').textContent = 'Retirada mensal: ' + fmt(rm * 0.5);
+  document.getElementById('max-retirar').textContent = fmt(livre * 0.8);
+  renderLista(); renderPizza(); renderInstrucoes(); atualizarSelectAdd();
+}
+
+function renderLista() {
+  const el = document.getElementById('lista-inv');
+  if (!state.investimentos.length) { el.innerHTML = '<div class="no-inv">Nenhum investimento cadastrado ainda.<br>Clique em Adicionar para começar.</div>'; return; }
+  el.innerHTML = state.investimentos.map((inv, i) => {
+    const atual = calcSaldoAtual(inv), dias = calcDiasRestantes(inv);
+    const badge = dias === 0 ? '<span class="badge livre"><i class="ti ti-lock-open"></i> Livre</span>' : '<span class="badge trancado"><i class="ti ti-lock"></i> Trancado: ' + dias + 'd</span>';
+    return `<div class="inv-item"><div><div class="inv-nome">${inv.nome}</div><div class="inv-banco">${inv.banco} · ${inv.taxa}% ao mês</div><div style="margin-top:4px">${badge}</div></div><div><div class="inv-valor">${fmt(atual)}</div><div style="display:flex;gap:4px;margin-top:4px;justify-content:flex-end"><button class="btn" style="font-size:12px;padding:4px 8px" onclick="abrirCorrigir(${i})"><i class="ti ti-edit"></i></button><button class="btn danger" style="font-size:12px;padding:4px 8px" onclick="removerInv(${i})"><i class="ti ti-trash"></i></button></div></div></div>`;
+  }).join('');
+}
+
+function renderPizza() {
+  const canvas = document.getElementById('pizza'), ctx = canvas.getContext('2d'), legenda = document.getElementById('legenda');
+  ctx.clearRect(0, 0, 140, 140);
+  const cores = ['#378ADD', '#1D9E75', '#D85A30', '#D4537E', '#7F77DD', '#BA7517', '#E24B4A'];
+  const total = totalInvestido();
+  if (!total) { ctx.beginPath(); ctx.arc(70, 70, 60, 0, Math.PI * 2); ctx.fillStyle = '#E0E0E0'; ctx.fill(); legenda.innerHTML = '<div style="font-size:13px;color:#999">Nenhum investimento</div>'; return; }
+  let itens = state.investimentos.map((inv, i) => ({ nome: inv.nome + ' (' + inv.banco + ')', val: calcSaldoAtual(inv), cor: cores[i % cores.length] }));
+  if (state.saldoLivre > 0) itens.push({ nome: 'Saldo livre', val: state.saldoLivre, cor: '#888' });
+  let start = -Math.PI / 2;
+  itens.forEach(item => { const slice = (item.val / total) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(70, 70); ctx.arc(70, 70, 60, start, start + slice); ctx.closePath(); ctx.fillStyle = item.cor; ctx.fill(); start += slice; });
+  legenda.innerHTML = itens.map(item => `<div class="legenda-item"><div class="dot" style="background:${item.cor}"></div><div><span style="font-weight:500">${(item.val / total * 100).toFixed(1)}%</span> <span style="color:#666;font-size:13px">${item.nome}</span></div></div>`).join('');
+}
+
+function renderInstrucoes() {
+  const el = document.getElementById('instrucoes-lista');
+  if (!state.instrucoes || !state.instrucoes.length) { el.innerHTML = '<div class="card" style="text-align:center;color:#999;font-size:14px">Clique em "Atualizar instruções de hoje" para começar.</div>'; document.getElementById('resumo-mes').textContent = 'Atualize as instruções para ver o resumo.'; return; }
+  el.innerHTML = state.instrucoes.map((inst, i) => {
+    const key = state.dataInstrucao + '_' + i, feito = state.instrucoesCumpridas[key] === 'feito', nao = state.instrucoesCumpridas[key] === 'nao';
+    return `<div class="instrucao" style="${feito ? 'opacity:0.6' : ''}"><div class="instrucao-texto">${inst.texto}</div><div class="instrucao-motivo">${inst.motivo}</div><button class="ver-mais" onclick="toggleDetalhes(${i})"><i class="ti ti-info-circle"></i> Ver mais detalhes</button><div class="detalhes" id="det-${i}">${inst.detalhes}</div><div class="instrucao-btns">${feito ? '<span style="color:#1D9E75;font-size:13px;font-weight:500"><i class="ti ti-check"></i> Feito!</span>' : nao ? '<span style="color:#999;font-size:13px"><i class="ti ti-x"></i> Não feito hoje</span>' : `<button class="btn success" onclick="marcarTarefa(${i},'feito')"><i class="ti ti-check"></i> Feito</button><button class="btn danger" onclick="marcarTarefa(${i},'nao')"><i class="ti ti-x"></i> Não vou fazer hoje</button>`}</div></div>`;
+  }).join('');
+  const total = totalInvestido(), rm = rendMes(), pctMes = total > 0 ? (rm / total * 100).toFixed(2) : 0;
+  document.getElementById('resumo-mes').innerHTML = `Rendimento estimado este mês: <strong>${pctMes}%</strong>. Meta: 1,5%. ${parseFloat(pctMes) >= 1.5 ? '<span style="color:#1D9E75">Parabéns, está no caminho certo!</span>' : '<span style="color:#BA7517">Ainda abaixo da meta. Veja as instruções acima.</span>'}`;
+}
+
+// ─── AÇÕES ────────────────────────────────────────────────────────────────────
+function toggleDetalhes(i) { document.getElementById('det-' + i).classList.toggle('open'); }
+function marcarTarefa(i, tipo) { state.instrucoesCumpridas[state.dataInstrucao + '_' + i] = tipo; save(); }
+
+async function atualizarInstrucoes() {
+  const total = totalInvestido(), livre = totalLivre(), rm = rendMes(), pctMes = total > 0 ? rm / total * 100 : 0;
+  state.dataInstrucao = new Date().toLocaleDateString('pt-BR');
+  state.instrucoesCumpridas = {};
+  const el = document.getElementById('instrucoes-lista');
+  el.innerHTML = '<div class="card" style="text-align:center;color:#666;font-size:14px"><div class="typing"><span></span><span></span><span></span></div><div style="margin-top:8px">Analisando o mercado…</div></div>';
+  const invStr = state.investimentos.map(i => `${i.nome} no ${i.banco}: ${fmt(calcSaldoAtual(i))}, ${i.taxa}% ao mes, ${calcDiasRestantes(i) === 0 ? 'livre' : calcDiasRestantes(i) + ' dias trancado'}`).join('; ') || 'nenhum';
+  const prompt = `Voce e um gerente financeiro pessoal. Responda APENAS em JSON valido, sem markdown, sem explicacoes fora do JSON. Formato: {"instrucoes":[{"texto":"instrucao direta","motivo":"motivo curto e simples","detalhes":"explicacao mais completa em linguagem simples para leigo"}],"urgente":false}. Maximo 3 instrucoes. Use linguagem muito simples, sem jargoes. A meta e minimo 12% ao ano, mirando 1,5% a 2% ao mes. Situacao atual: total investido ${fmt(total)}, livre ${fmt(livre)}, rendimento estimado ${pctMes.toFixed(2)}% ao mes, investimentos: ${invStr}. Nao mande tirar dinheiro trancado. Se nao ha nada importante a fazer, diga para nao mexer. So recomende mudancas se a diferenca for significativa.`;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] }) });
+    const d = await r.json();
+    const txt = d.content[0].text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(txt);
+    state.instrucoes = parsed.instrucoes;
+    if (parsed.urgente) { document.getElementById('alert-perdeu').style.display = 'flex'; document.getElementById('alert-perdeu-txt').textContent = 'Atenção: algo importante aconteceu no mercado. Veja as instruções abaixo.'; }
+  } catch {
+    state.instrucoes = [{ texto: 'Não mexa em nada hoje.', motivo: 'Seu dinheiro está rendendo conforme esperado.', detalhes: 'Continue monitorando. Se surgir uma oportunidade real, será indicada aqui.' }];
+  }
+  save();
+}
+
+function simularRetirada() {
+  const val = parseFloat(document.getElementById('inp-retirar').value) || 0;
+  const el = document.getElementById('impacto-retirada');
+  if (val <= 0) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const r = 0.015;
+  document.getElementById('imp-agora').textContent = fmt(val);
+  document.getElementById('imp-1ano').textContent = '-' + fmt(val * Math.pow(1 + r, 12));
+  document.getElementById('imp-5anos').textContent = '-' + fmt(val * Math.pow(1 + r, 60));
+  const livres = state.investimentos.filter(i => calcDiasRestantes(i) === 0);
+  document.getElementById('imp-de-onde').textContent = livres.length > 0 ? 'Recomendo tirar de: ' + livres[0].nome + ' (' + livres[0].banco + '), pois tem liquidez diária.' : state.saldoLivre >= val ? 'Tire do seu saldo livre.' : 'Atenção: nenhum investimento com liquidez imediata disponível.';
+}
+
+function confirmarRetirada() {
+  const val = parseFloat(document.getElementById('inp-retirar').value) || 0;
+  if (val <= 0) return;
+  let resto = val;
+  if (state.saldoLivre >= resto) { state.saldoLivre -= resto; resto = 0; }
+  else { resto -= state.saldoLivre; state.saldoLivre = 0; }
+  const livres = state.investimentos.filter(i => calcDiasRestantes(i) === 0);
+  for (let i = 0; i < livres.length && resto > 0; i++) {
+    const idx = state.investimentos.indexOf(livres[i]);
+    const atual = calcSaldoAtual(livres[i]);
+    if (atual >= resto) { state.investimentos[idx].valor = atual - resto; resto = 0; }
+    else { resto -= atual; state.investimentos.splice(idx, 1); }
+  }
+  document.getElementById('inp-retirar').value = '';
+  document.getElementById('impacto-retirada').style.display = 'none';
+  save();
+}
+
+function indicarExtra() {
+  const val = parseFloat(document.getElementById('inp-extra').value) || 0;
+  const el = document.getElementById('extra-resp');
+  if (val <= 0) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = `<i class="ti ti-bulb"></i> <span>Com ${fmt(val)} disponível, recomendo colocar na Caixinha Turbo do Nubank (115% CDI). Rende cerca de ${fmt(val * 0.0131)} este mês com liquidez diária.</span>`;
+}
+
+function openModalAdd() { const val = parseFloat(document.getElementById('inp-add').value) || 0; if (val <= 0) return; document.getElementById('modal-add').classList.add('open'); }
+function atualizarSelectAdd() { const sel = document.getElementById('sel-add-inv'); sel.innerHTML = '<option value="">-- Saldo livre (alocar depois) --</option>' + state.investimentos.map((inv, i) => `<option value="${i}">${inv.nome} (${inv.banco})</option>`).join(''); }
+function confirmarAdd() { const val = parseFloat(document.getElementById('inp-add').value) || 0, idx = document.getElementById('sel-add-inv').value; if (idx === '') { state.saldoLivre += val; } else { state.investimentos[parseInt(idx)].valor += val; } document.getElementById('inp-add').value = ''; closeModal('modal-add'); save(); }
+function openModalNovoInv() { document.getElementById('modal-inv').classList.add('open'); }
+function salvarInv() {
+  const nome = document.getElementById('inv-nome').value.trim(), banco = document.getElementById('inv-banco').value.trim(), valor = parseFloat(document.getElementById('inv-valor').value) || 0, taxa = parseFloat(document.getElementById('inv-taxa').value) || 0, prazo = parseInt(document.getElementById('inv-prazo').value);
+  if (!nome || !banco || valor <= 0 || taxa <= 0) return;
+  state.investimentos.push({ nome, banco, valor, taxa, prazo, dataEntrada: new Date().toISOString() });
+  ['inv-nome', 'inv-banco', 'inv-valor', 'inv-taxa'].forEach(id => document.getElementById(id).value = '');
+  closeModal('modal-inv'); save();
+}
+function removerInv(i) { if (confirm('Remover este investimento?')) { state.investimentos.splice(i, 1); save(); } }
+function abrirCorrigir(i) { state.corrigirIdx = i; document.getElementById('corrigir-val').value = calcSaldoAtual(state.investimentos[i]).toFixed(2); document.getElementById('modal-corrigir').classList.add('open'); }
+function confirmarCorrigir() { const val = parseFloat(document.getElementById('corrigir-val').value) || 0; if (val > 0 && state.corrigirIdx >= 0) { state.investimentos[state.corrigirIdx].valor = val; state.investimentos[state.corrigirIdx].dataEntrada = new Date().toISOString(); } closeModal('modal-corrigir'); save(); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showTab(name, btn) { document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.getElementById('tab-' + name).classList.add('active'); btn.classList.add('active'); }
+
+async function enviarChat() {
+  const inp = document.getElementById('chat-inp'), msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  const msgs = document.getElementById('chat-msgs');
+  msgs.innerHTML += `<div class="chat-msg user">${msg}</div><div class="chat-msg bot" id="chat-typing"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+  const total = totalInvestido(), livre = totalLivre(), rm = rendMes(), pctMes = total > 0 ? (rm / total * 100).toFixed(2) : 0;
+  const invStr = state.investimentos.map(i => `${i.nome} no ${i.banco}: ${fmt(calcSaldoAtual(i))}, ${i.taxa}% ao mes, ${calcDiasRestantes(i) === 0 ? 'livre' : calcDiasRestantes(i) + ' dias trancado'}`).join('; ') || 'nenhum';
+  const ctx = `Voce e um gerente financeiro pessoal. Responda em portugues brasileiro, de forma curta e em linguagem bem simples para leigos. Meta: minimo 12% ao ano, mirando 1,5% a 2% ao mes. Situacao: total ${fmt(total)}, livre ${fmt(livre)}, rendimento ${pctMes}% ao mes, investimentos: ${invStr}.`;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: ctx, messages: [{ role: 'user', content: msg }] }) });
+    const d = await r.json();
+    const resp = d.content && d.content[0] ? d.content[0].text : 'Não consegui responder agora. Tente novamente.';
+    document.getElementById('chat-typing').outerHTML = `<div class="chat-msg bot">${resp}</div>`;
+  } catch {
+    document.getElementById('chat-typing').outerHTML = `<div class="chat-msg bot">Erro ao conectar. Verifique sua conexão.</div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ─── PWA INSTALL ──────────────────────────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').style.display = 'none';
+  deferredPrompt = null;
+});
+async function instalarApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('install-banner').style.display = 'none';
+  deferredPrompt = null;
+}
+
+// ─── SERVICE WORKER ───────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(console.error);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+const cfg = carregarConfig();
+if (cfg) {
+  iniciarSupabase(cfg.url, cfg.key);
+} else {
+  document.getElementById('setup-banner').style.display = 'block';
+  setSyncStatus('err', 'Sem banco');
+  carregarLocal();
+  render();
+}
+</script>
+</body>
+</html>
